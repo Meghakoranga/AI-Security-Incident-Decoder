@@ -1,0 +1,23 @@
+name = "ai-security-incident-decoder"
+main = "src/index.ts"
+compatibility_date = "2025-11-08"
+
+# Workers AI binding
+[ai]
+binding = "AI"
+
+# Durable Objects binding for memory
+[[durable_objects.bindings]]
+name = "INCIDENT_STORE"
+class_name = "IncidentStore"
+script_name = "ai-security-incident-decoder"
+
+# Migrations for Durable Objects
+[[migrations]]
+tag = "v1"
+new_classes = ["IncidentStore"]
+
+[[static_assets]]
+name = "__STATIC_CONTENT"
+bucket = "./public"
+

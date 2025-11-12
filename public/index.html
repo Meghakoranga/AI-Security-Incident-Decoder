@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Security Incident Decoder</title>
+  <style>
+    body {
+      font-family: Arial,sans-serif;
+      background: #f7f9fa;
+      margin: 0;
+      padding: 2rem;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h1 {
+      font-size: 2.1rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      font-size: 1em;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border: 1px solid #bbb;
+      padding: 10px;
+      resize: vertical;
+    }
+    button {
+      background: #4361ee;
+      color: white;
+      padding: 0.7em 1.6em;
+      border: none;
+      border-radius: 6px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 1.5em;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .spinner {
+      display: none;
+      margin: 1em 0;
+      width: 28px;
+      height: 28px;
+      border: 5px solid #eee;
+      border-top: 5px solid #4361ee;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+    #result {
+      background: #fff;
+      padding: 1em 1.1em;
+      border-radius: 8px;
+      min-height: 60px;
+      margin-bottom: 1.4em;
+      border: 1px solid #e9ecef;
+      white-space: pre-wrap;
+      font-size: 1.08em;
+      line-height: 1.6;
+    }
+    #history {
+      background: #f8f8f8;
+      border-radius: 8px;
+      padding: 1em 1.1em;
+      border: 1px solid #ececec;
+      margin-top: 1em;
+      font-size: 1em;
+      color: #495057;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .history-item {
+      padding-bottom: 0.5em;
+      margin-bottom: 0.7em;
+      border-bottom: 1px solid #eaeaea;
+    }
+    .history-item:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>AI Security Incident Decoder</h1>
+  <p>Paste your log or alert message below and click <b>Analyze</b> to get instant AI-powered diagnosis and remediation steps.</p>
+  
+  <textarea id="inputText" placeholder="Paste a log/alert here..."></textarea><br/>
+  <button id="analyzeBtn">Analyze</button>
+  <div id="spinner" class="spinner"></div>
+  
+  <h2>Analysis Result</h2>
+  <div id="result">Waiting for input...</div>
+
+  <h2>This Session's Incidents</h2>
+  <div id="history">No incidents analyzed yet.</div>
+  
+  <script>
+    const analyzeBtn = document.getElementById("analyzeBtn");
+    const inputText = document.getElementById("inputText");
+    const resultDiv = document.getElementById("result");
+    const spinner = document.getElementById("spinner");
+    const historyDiv = document.getElementById("history");
+
+    const sessionId = "sess-" + Math.random().toString(36).slice(2, 10);
+    let history = [];
+
+    function updateHistory() {
+      if (history.length === 0) {
+        historyDiv.textContent = "No incidents analyzed yet.";
+        return;
+      }
+      historyDiv.innerHTML = "";
+      history.slice().reverse().forEach((item, ix) => {
+        const d = document.createElement("div");
+        d.className = "history-item";
+        d.innerHTML =
+          `<div><b>Incident:</b></div>` +
+          `<div style="background:#fff;border-radius:5px;padding:6px 9px;margin:4px 0 4px 0;border:1px solid #eee;"><span>${item.text}</span></div>`;
+        historyDiv.appendChild(d);
+      });
+    }
+
+    analyzeBtn.onclick = async () => {
+      const question = inputText.value.trim();
+      if (!question) {
+        alert("Please enter a log or alert message...");
+        return;
+      }
+      analyzeBtn.disabled = true;
+      spinner.style.display = "inline-block";
+      resultDiv.textContent = "Analyzing...";
+      try {
+        const res = await fetch("/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: question, sessionId })
+        });
+        const data = await res.json();
+        if (data.error) {
+          resultDiv.innerHTML = `<span style="color:#c00;font-weight:bold;">Error: ${data.error}</span>`;
+        } else {
+          // Render newlines as line breaks, preserve code blocks if present
+          let formatted = (data.analysis||"").replace(/``````/g, '<pre>$1</pre>').replace(/\n/g, "<br>");
+          resultDiv.innerHTML = formatted;
+          history.push({ text: question });
+          updateHistory();
+        }
+      } catch (e) {
+        resultDiv.innerHTML = `<span style="color:#c00;font-weight:bold;">Error: ${e.message}</span>`;
+      } finally {
+        spinner.style.display = "none";
+        analyzeBtn.disabled = false;
+      }
+    };
+
+    updateHistory();
+  </script>
+</body>
+</html>

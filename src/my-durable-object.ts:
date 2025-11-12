@@ -1,0 +1,16 @@
+export class MyDurableObject {
+  state: DurableObjectState;
+
+  constructor(state: DurableObjectState) {
+    this.state = state;
+  }
+
+  async fetch(request: Request) {
+    const url = new URL(request.url);
+    if (url.pathname === "/ping") {
+      return new Response("pong");
+    }
+    return new Response("MyDurableObject OK");
+  }
+}
+
